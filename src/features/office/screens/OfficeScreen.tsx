@@ -3187,12 +3187,45 @@ export function OfficeScreen({
     const skillTriggerHoldMaps = buildOfficeSkillTriggerHoldMaps(
       skillTriggers.movementTargetByAgentId,
     );
-    const configuredStateHoldMaps = buildOfficeStateAnimationMappingResult({
-      agents: state.agents,
-      animationState: base,
-      mappings: stateAnimationMappings,
-      nowMs: animationNowMs,
-    });
+    if (stateAnimationMappings.length === 0) {
+      return {
+        ...base,
+        danceUntilByAgentId: danceUntilByAgentId,
+        deskHoldByAgentId: {
+          ...base.deskHoldByAgentId,
+          ...skillTriggerHoldMaps.deskHoldByAgentId,
+        },
+        githubHoldByAgentId: {
+          ...base.githubHoldByAgentId,
+          ...skillTriggerHoldMaps.githubHoldByAgentId,
+        },
+        gymHoldByAgentId: {
+          ...base.gymHoldByAgentId,
+          ...skillTriggerHoldMaps.gymHoldByAgentId,
+        },
+        jukeboxHoldByAgentId: {
+          ...base.jukeboxHoldByAgentId,
+          ...skillTriggerHoldMaps.jukeboxHoldByAgentId,
+        },
+        qaHoldByAgentId: {
+          ...base.qaHoldByAgentId,
+          ...skillTriggerHoldMaps.qaHoldByAgentId,
+        },
+        skillGymHoldByAgentId: {
+          ...base.skillGymHoldByAgentId,
+          ...skillTriggerHoldMaps.skillGymHoldByAgentId,
+        },
+      };
+    }
+    const configuredStateHoldMaps =
+      stateAnimationMappings.length > 0
+        ? buildOfficeStateAnimationMappingResult({
+            agents: state.agents,
+            animationState: base,
+            mappings: stateAnimationMappings,
+            nowMs: animationNowMs,
+          })
+        : null;
 
     return {
       ...base,
@@ -3200,40 +3233,40 @@ export function OfficeScreen({
       deskHoldByAgentId: {
         ...base.deskHoldByAgentId,
         ...skillTriggerHoldMaps.deskHoldByAgentId,
-        ...configuredStateHoldMaps.deskHoldByAgentId,
+        ...(configuredStateHoldMaps?.deskHoldByAgentId ?? {}),
       },
       githubHoldByAgentId: {
         ...base.githubHoldByAgentId,
         ...skillTriggerHoldMaps.githubHoldByAgentId,
-        ...configuredStateHoldMaps.githubHoldByAgentId,
+        ...(configuredStateHoldMaps?.githubHoldByAgentId ?? {}),
       },
       gymHoldByAgentId: {
         ...base.gymHoldByAgentId,
         ...skillTriggerHoldMaps.gymHoldByAgentId,
-        ...configuredStateHoldMaps.gymHoldByAgentId,
+        ...(configuredStateHoldMaps?.gymHoldByAgentId ?? {}),
       },
       jukeboxHoldByAgentId: {
         ...base.jukeboxHoldByAgentId,
         ...skillTriggerHoldMaps.jukeboxHoldByAgentId,
-        ...configuredStateHoldMaps.jukeboxHoldByAgentId,
+        ...(configuredStateHoldMaps?.jukeboxHoldByAgentId ?? {}),
       },
       phoneBoothHoldByAgentId: {
         ...base.phoneBoothHoldByAgentId,
-        ...configuredStateHoldMaps.phoneBoothHoldByAgentId,
+        ...(configuredStateHoldMaps?.phoneBoothHoldByAgentId ?? {}),
       },
       qaHoldByAgentId: {
         ...base.qaHoldByAgentId,
         ...skillTriggerHoldMaps.qaHoldByAgentId,
-        ...configuredStateHoldMaps.qaHoldByAgentId,
+        ...(configuredStateHoldMaps?.qaHoldByAgentId ?? {}),
       },
       smsBoothHoldByAgentId: {
         ...base.smsBoothHoldByAgentId,
-        ...configuredStateHoldMaps.smsBoothHoldByAgentId,
+        ...(configuredStateHoldMaps?.smsBoothHoldByAgentId ?? {}),
       },
       skillGymHoldByAgentId: {
         ...base.skillGymHoldByAgentId,
         ...skillTriggerHoldMaps.skillGymHoldByAgentId,
-        ...configuredStateHoldMaps.skillGymHoldByAgentId,
+        ...(configuredStateHoldMaps?.skillGymHoldByAgentId ?? {}),
       },
     };
   }, [
