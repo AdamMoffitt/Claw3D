@@ -61,7 +61,7 @@ describe("StateAnimationMappingsEditor", () => {
       target: { value: "syncing" },
     });
     expect(onChange).toHaveBeenLastCalledWith([
-      expect.objectContaining({ sourceState: "syncing" }),
+      expect.objectContaining({ sourceState: "syncing", label: "Syncing" }),
     ]);
 
     fireEvent.change(screen.getByLabelText("Target"), {

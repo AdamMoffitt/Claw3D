@@ -35,6 +35,13 @@ const EFFECT_LABELS: Record<OfficeStateEffectId, string> = {
 const createMappingId = (sourceState: string, index: number) =>
   `state-${sourceState}-${Date.now()}-${index}`;
 
+const labelFromSourceState = (sourceState: string) =>
+  sourceState
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 const createMapping = (
   sourceState: string,
   animationTarget: OfficeStateAnimationTarget,
@@ -42,7 +49,7 @@ const createMapping = (
 ): OfficeStateAnimationMapping => ({
   id: createMappingId(sourceState, params.priority ?? 50),
   sourceState,
-  label: params.label ?? sourceState.replace(/_/g, " "),
+  label: params.label ?? labelFromSourceState(sourceState),
   animationTarget,
   effect: params.effect ?? "none",
   soundCueId: params.soundCueId ?? null,
@@ -76,9 +83,17 @@ export function StateAnimationMappingsEditor({
     patch: Partial<OfficeStateAnimationMapping>,
   ) => {
     onChange(
-      mappings.map((mapping) =>
-        mapping.id === id ? { ...mapping, ...patch } : mapping,
-      ),
+      mappings.map((mapping) => {
+        if (mapping.id !== id) return mapping;
+        const next = { ...mapping, ...patch };
+        if (
+          typeof patch.sourceState === "string" &&
+          mapping.label === labelFromSourceState(mapping.sourceState)
+        ) {
+          next.label = labelFromSourceState(patch.sourceState);
+        }
+        return next;
+      }),
     );
   };
 
