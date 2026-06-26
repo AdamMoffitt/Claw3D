@@ -14,7 +14,12 @@ import type {
 } from "@/features/retro-office/core/types";
 import { AgentModelProps } from "@/features/retro-office/objects/types";
 
-const MAX_NAMEPLATE_TEXT_LENGTH = 10;
+// IRIS-PATCH: bumped 10 → 50 so multi-word agent names like
+// "Customer Re-activation Agent" or "AI System Health Engineer"
+// render in full instead of being truncated to "Customer" / "AI".
+// Combined with the wider Billboard background + Text maxWidth
+// further down in this file. Re-apply on next upstream pull.
+const MAX_NAMEPLATE_TEXT_LENGTH = 50;
 const MAX_SPEECH_BUBBLE_TEXT_LENGTH = 180;
 const MAX_SPEECH_BUBBLE_LINES = 4;
 
@@ -1100,16 +1105,22 @@ export const AgentModel = memo(function AgentModel({
         />
       </mesh>
       {!activeSpeechBubble && nameplateText ? (
+        // IRIS-PATCH: widened the nameplate panel (0.82 → 1.5)
+        // and the inner Text maxWidth (0.68 → 1.35) so long agent
+        // names render in full (paired with the bumped
+        // MAX_NAMEPLATE_TEXT_LENGTH near the top of this file).
+        // Left accent bar + right status dot positions shifted to
+        // match the new edges. Re-apply on next upstream pull.
         <Billboard position={[0, 1.05, 0]}>
           <mesh position={[0, 0, -0.001]}>
-            <planeGeometry args={[0.82, subtitleText ? 0.34 : 0.24]} />
+            <planeGeometry args={[1.5, subtitleText ? 0.34 : 0.24]} />
             <meshBasicMaterial color="#080c14" transparent opacity={0.9} />
           </mesh>
-          <mesh position={[-0.392, 0, 0]}>
+          <mesh position={[-0.736, 0, 0]}>
             <planeGeometry args={[0.028, subtitleText ? 0.34 : 0.24]} />
             <meshBasicMaterial color={color} />
           </mesh>
-          <mesh position={[0.355, subtitleText ? 0.05 : 0, 0]}>
+          <mesh position={[0.69, subtitleText ? 0.05 : 0, 0]}>
             <circleGeometry args={[0.052, 14]} />
             <meshBasicMaterial ref={statusDotMatRef} color="#ef4444" />
           </mesh>
@@ -1119,7 +1130,7 @@ export const AgentModel = memo(function AgentModel({
             color="#e8dfc0"
             anchorX="center"
             anchorY="middle"
-            maxWidth={0.68}
+            maxWidth={1.35}
             font={undefined}
           >
             {nameplateText}
@@ -1131,7 +1142,7 @@ export const AgentModel = memo(function AgentModel({
               color="#8ab4ff"
               anchorX="center"
               anchorY="middle"
-              maxWidth={0.68}
+              maxWidth={1.35}
               font={undefined}
             >
               {subtitleText}
