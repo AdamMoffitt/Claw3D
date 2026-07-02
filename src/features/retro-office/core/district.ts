@@ -47,6 +47,16 @@ export const DISTRICT_CAMERA_POSITION: [number, number, number] = [14, 16, 18];
 export const DISTRICT_CAMERA_TARGET: [number, number, number] = [0, 0, 1];
 export const DISTRICT_CAMERA_ZOOM = 34;
 
+// IRIS-PATCH: portrait viewport camera framing. Used when the office
+// is embedded in a tall 9:16-ish viewport (Iris mobile app WebView, or
+// narrow browser windows on the dashboard). Higher + further-back
+// camera with lower zoom so the 2x4 desk grid still frames all 8
+// desks vertically. Landscape values above are untouched — this pair
+// is opt-in via the `viewport` prop on RetroOffice3D.
+export const DISTRICT_CAMERA_POSITION_PORTRAIT: [number, number, number] = [8, 22, 20];
+export const DISTRICT_CAMERA_TARGET_PORTRAIT: [number, number, number] = [0, 0, 3];
+export const DISTRICT_CAMERA_ZOOM_PORTRAIT = 26;
+
 export const isRemoteOfficeAgentId = (agentId: string) => agentId.startsWith("remote:");
 
 const clampZoneValue = (value: number, min: number, max: number) =>
