@@ -97,6 +97,10 @@ import {
   DISTRICT_CAMERA_POSITION,
   DISTRICT_CAMERA_TARGET,
   DISTRICT_CAMERA_ZOOM,
+  // IRIS-PATCH: portrait viewport camera constants.
+  DISTRICT_CAMERA_POSITION_PORTRAIT,
+  DISTRICT_CAMERA_TARGET_PORTRAIT,
+  DISTRICT_CAMERA_ZOOM_PORTRAIT,
   LOCAL_OFFICE_CANVAS_HEIGHT,
   isRemoteOfficeAgentId,
   LOCAL_OFFICE_CANVAS_WIDTH,
@@ -2344,6 +2348,10 @@ export function RetroOffice3D({
   onTaskBoardUpdateCard,
   onTaskBoardDeleteCard,
   onTaskBoardRefreshCronJobs,
+  // IRIS-PATCH: portrait viewport. Reframes the camera + OrbitControls
+  // for a tall 9:16-ish embed (Iris mobile app WebView, narrow browser
+  // windows). Landscape is the historical default and is unchanged.
+  viewport = "landscape",
 }: {
   agents: OfficeAgent[];
   officeCenterSignal?: number;
@@ -2467,6 +2475,8 @@ export function RetroOffice3D({
   ) => void;
   onTaskBoardDeleteCard?: (cardId: string) => void;
   onTaskBoardRefreshCronJobs?: () => void;
+  // IRIS-PATCH: portrait viewport prop declaration.
+  viewport?: "portrait" | "landscape";
 }) {
   const resolvedCleaningCues = animationState?.cleaningCues ?? cleaningCues;
   const resolvedDanceUntilByAgentId =
@@ -2615,21 +2625,38 @@ export function RetroOffice3D({
       toWorld(LOCAL_OFFICE_CANVAS_WIDTH / 2, LOCAL_OFFICE_CANVAS_HEIGHT / 2),
     [],
   );
+  // IRIS-PATCH: portrait viewport reframes the camera without touching
+  // the underlying desk grid. Higher + further-back so the 2x4 grid
+  // still fits vertically in a 9:16 embed.
+  const isPortrait = viewport === "portrait";
+  const activeDistrictPos = isPortrait
+    ? DISTRICT_CAMERA_POSITION_PORTRAIT
+    : DISTRICT_CAMERA_POSITION;
+  const activeDistrictTarget = isPortrait
+    ? DISTRICT_CAMERA_TARGET_PORTRAIT
+    : DISTRICT_CAMERA_TARGET;
+  const activeDistrictZoom = isPortrait
+    ? DISTRICT_CAMERA_ZOOM_PORTRAIT
+    : DISTRICT_CAMERA_ZOOM;
   const CAM_POS = useMemo<[number, number, number]>(() => {
-    if (remoteOfficeEnabled) return DISTRICT_CAMERA_POSITION;
+    if (remoteOfficeEnabled) return activeDistrictPos;
     return [
       LOCAL_CAMERA_TARGET[0] +
-        (DISTRICT_CAMERA_POSITION[0] - DISTRICT_CAMERA_TARGET[0]),
+        (activeDistrictPos[0] - activeDistrictTarget[0]),
       LOCAL_CAMERA_TARGET[1] +
-        (DISTRICT_CAMERA_POSITION[1] - DISTRICT_CAMERA_TARGET[1]),
+        (activeDistrictPos[1] - activeDistrictTarget[1]),
       LOCAL_CAMERA_TARGET[2] +
-        (DISTRICT_CAMERA_POSITION[2] - DISTRICT_CAMERA_TARGET[2]),
+        (activeDistrictPos[2] - activeDistrictTarget[2]),
     ];
-  }, [LOCAL_CAMERA_TARGET, remoteOfficeEnabled]);
+  }, [LOCAL_CAMERA_TARGET, remoteOfficeEnabled, activeDistrictPos, activeDistrictTarget]);
   const cameraTarget = remoteOfficeEnabled
-    ? DISTRICT_CAMERA_TARGET
+    ? activeDistrictTarget
     : LOCAL_CAMERA_TARGET;
-  const cameraZoom = remoteOfficeEnabled ? DISTRICT_CAMERA_ZOOM : 56;
+  // IRIS-PATCH: portrait uses lower zoom (wider FOV) so all 8 desks
+  // stay in frame. Landscape default 56 is unchanged.
+  const cameraZoom = remoteOfficeEnabled
+    ? activeDistrictZoom
+    : (isPortrait ? 38 : 56);
   const overviewPreset = useMemo(
     () => ({ pos: CAM_POS, target: cameraTarget, zoom: cameraZoom }),
     [CAM_POS, cameraTarget, cameraZoom]
@@ -5204,6 +5231,10 @@ export function RetroOffice3D({
             <AdaptiveDprController />
 
             {/* Orbit / pan / zoom controls — disabled while follow cam is active or while editing furniture. */}
+            {/* IRIS-PATCH: portrait viewport widens the zoom range so
+                fat-finger pinch on mobile can still reach a comfortable
+                framing, and tightens polarAngle so users can't tilt to
+                a near-horizontal view where furniture occludes agents. */}
             <OrbitControls
               ref={orbitRef}
               target={cameraTarget}
@@ -5213,14 +5244,22 @@ export function RetroOffice3D({
               rotateSpeed={0.6}
               zoomSpeed={0.8}
               panSpeed={0.6}
-              minZoom={25}
-              maxZoom={120}
-              maxPolarAngle={Math.PI / 2.2}
+              minZoom={isPortrait ? 18 : 25}
+              maxZoom={isPortrait ? 90 : 120}
+              maxPolarAngle={isPortrait ? Math.PI / 2.4 : Math.PI / 2.2}
               enableRotate={!spaceDown}
               mouseButtons={{
                 LEFT: spaceDown ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
                 MIDDLE: THREE.MOUSE.DOLLY,
                 RIGHT: THREE.MOUSE.PAN,
+              }}
+              // IRIS-PATCH: enable single-finger orbit + two-finger
+              // pinch/pan on touch devices (default r3f OrbitControls
+              // maps single-touch to rotate, but we surface it here
+              // explicitly so future patches don't regress it).
+              touches={{
+                ONE: THREE.TOUCH.ROTATE,
+                TWO: THREE.TOUCH.DOLLY_PAN,
               }}
             />
 
