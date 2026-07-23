@@ -2069,6 +2069,40 @@ function useAgentTick(
           } else if (agent.status === "error") {
             ns = "standing";
           } else {
+            // Autonomous desk work: an idle agent (real status ≠ "working") that
+            // walked back to its own desk sits and works for a while, so the office
+            // looks productive instead of everyone perpetually wandering/chatting.
+            // (a) Mid work session → stay seated until it elapses.
+            if (
+              agent.state === "sitting" &&
+              (agent.autonomousDeskUntil ?? 0) > now
+            ) {
+              return {
+                ...agent,
+                x: nx,
+                y: ny,
+                path: [],
+                state: "sitting" as const,
+                frame: agent.frame + 1,
+              };
+            }
+            // (b) Just arrived at the desk we routed it to → begin the work session.
+            if (agent.interactionTarget === "desk") {
+              return {
+                ...agent,
+                x: nx,
+                y: ny,
+                path: [],
+                interactionTarget: undefined,
+                state: "sitting" as const,
+                autonomousDeskUntil:
+                  now +
+                  AUTONOMOUS_DESK_WORK_MIN_MS +
+                  Math.random() *
+                    (AUTONOMOUS_DESK_WORK_MAX_MS - AUTONOMOUS_DESK_WORK_MIN_MS),
+                frame: agent.frame + 1,
+              };
+            }
             // New Idea 9: away state — if idle for > AWAY_THRESHOLD_MS, send to nearest couch.
             const lastSeen = lastSeenByAgentId[agent.id] ?? 0;
             const isAway = lastSeen > 0 && now - lastSeen > AWAY_THRESHOLD_MS;
@@ -2106,6 +2140,33 @@ function useAgentTick(
             }
             ns = isAway ? ("away" as const) : "standing";
             if (Math.random() < 0.005) {
+              // Autonomous desk work: most of the time, head back to this agent's
+              // own desk and work a while (arrival → "sitting" via the
+              // interactionTarget === "desk" branch above) instead of wandering.
+              // Only real agents with an assigned desk; remote-office agents keep
+              // to their zone and just roam.
+              const deskIdx = deskByAgentRef.current.get(agent.id);
+              const deskPos =
+                typeof deskIdx === "number"
+                  ? (deskLocations[deskIdx] ?? null)
+                  : null;
+              if (
+                deskPos &&
+                !isRemoteOfficeAgentId(agent.id) &&
+                Math.random() < AUTONOMOUS_DESK_WORK_CHANCE
+              ) {
+                return {
+                  ...agent,
+                  x: nx,
+                  y: ny,
+                  targetX: deskPos.x,
+                  targetY: deskPos.y,
+                  path: astar(nx, ny, deskPos.x, deskPos.y, grid),
+                  interactionTarget: "desk" as const,
+                  state: "walking" as const,
+                  frame: agent.frame + 1,
+                };
+              }
               // Idea 6: 15% chance to walk to a social furniture item instead of a random roam point.
               let target: { x: number; y: number } | null = null;
               const socialCandidates = isRemoteOfficeAgentId(agent.id)
@@ -2202,6 +2263,12 @@ function useAgentTick(
 
 const AWAY_THRESHOLD_MS = 15 * 60 * 1000;
 const COMPACT_AGENT_BADGE_LIMIT = 6;
+// Autonomous desk work — how long an idle agent sits and works at its own desk
+// after choosing to head back to it, and how often (per wander re-roll) it makes
+// that choice instead of wandering to social furniture.
+const AUTONOMOUS_DESK_WORK_MIN_MS = 14_000;
+const AUTONOMOUS_DESK_WORK_MAX_MS = 40_000;
+const AUTONOMOUS_DESK_WORK_CHANCE = 0.55;
 
 const estimatePhoneSpeechDurationMs = (
   text: string | null | undefined,
