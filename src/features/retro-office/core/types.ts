@@ -62,6 +62,14 @@ export type RenderAgent = SceneActor & {
   workoutStyle?: "run" | "lift" | "bike" | "box" | "row" | "stretch";
   janitorRouteIndex?: number;
   janitorPauseUntil?: number;
+  /**
+   * When set and in the future, the agent is in an AUTONOMOUS desk-work session:
+   * an idle agent (real status ≠ "working") that walked back to its own desk to
+   * sit and work for a while. While this is > now the agent stays "sitting" and
+   * skips the wander re-roll, so idle agents periodically work at their desks
+   * instead of only wandering to social furniture.
+   */
+  autonomousDeskUntil?: number;
 };
 
 export type FurnitureItem = {
